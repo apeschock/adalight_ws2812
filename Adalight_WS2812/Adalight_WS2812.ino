@@ -40,7 +40,8 @@ void loop() {
     waitLoop:
     while (!Serial.available()){
       if(millis() >= nextSleepTime){
-        FastLED.showColor(CRGB(0,0,0));
+        // Set the LEDs off and clear their data
+        FastLED.clear(true);
       }
     }
     // Check next byte in Magic Word
@@ -81,5 +82,6 @@ void loop() {
   
   // Shows new values
   FastLED.show();
+  // Reset the sleep timer
   nextSleepTime = millis() + SLEEP_TIME;
 }

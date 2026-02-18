@@ -7,11 +7,15 @@
  * @date: 11/22/2015
  */
 #include "FastLED.h"
-#define NUM_LEDS 240
+#define NUM_LEDS 40
 #define DATA_PIN 6
 
 // Baudrate, higher rate allows faster refresh rate and more LEDs (defined in /etc/boblight.conf)
 #define serialRate 115200
+
+// Sleep timer
+const uint32_t SLEEP_TIME = (long)5 * 60 * 1000;
+uint32_t nextSleepTime = SLEEP_TIME;
 
 // Adalight sends a "Magic Word" (defined in /etc/boblight.conf) before sending the pixel data
 uint8_t prefix[] = {'A', 'd', 'a'}, hi, lo, chk, i;
@@ -23,24 +27,22 @@ void setup() {
   // Use NEOPIXEL to keep true colors
   FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
   
-  // Initial RGB flash
-  LEDS.showColor(CRGB(255, 0, 0));
-  delay(500);
-  LEDS.showColor(CRGB(0, 255, 0));
-  delay(500);
-  LEDS.showColor(CRGB(0, 0, 255));
-  delay(500);
-  LEDS.showColor(CRGB(0, 0, 0));
+  FastLED.clear();
   
   Serial.begin(serialRate);
   // Send "Magic Word" string to host
   Serial.print("Ada\n");
 }
 
-void loop() { 
+void loop() {
   // Wait for first byte of Magic Word
   for(i = 0; i < sizeof prefix; ++i) {
-    waitLoop: while (!Serial.available()) ;;
+    waitLoop:
+    while (!Serial.available()){
+      if(millis() >= nextSleepTime){
+        FastLED.showColor(CRGB(0,0,0));
+      }
+    }
     // Check next byte in Magic Word
     if(prefix[i] == Serial.read()) continue;
     // otherwise, start over
@@ -79,4 +81,5 @@ void loop() {
   
   // Shows new values
   FastLED.show();
+  nextSleepTime = millis() + SLEEP_TIME;
 }
